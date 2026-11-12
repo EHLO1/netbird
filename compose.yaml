@@ -1,0 +1,118 @@
+#-[ PROJECT NAME
+name: netbird
+# https://netbird.io
+# https://github.com/netbirdio/netbird
+
+#-[ ANCHORS
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  # Postgres - SQL Database
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG}
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *logging
+    networks:
+      - netbird-backend
+    restart: unless-stopped
+    volumes:
+      - postgres.data:/var/lib/postgresql/data
+      - ./postgres-init/01-databases.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+
+  netbird-server:
+    image: netbirdio/netbird-server:${NETBIRD_SERVER_IMAGE_TAG}
+    container_name: netbird-server
+    command: ["--config", "/etc/netbird/config.yaml"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NB_AUTH_SECRET=${NB_AUTH_SECRET}
+      - NB_IDP_SESSION_COOKIE_ENCRYPTION_KEY=${NB_IDP_SESSION_COOKIE_ENCRYPTION_KEY}
+      - NB_STORE_ENGINE_POSTGRES_DSN=${NB_STORE_ENGINE_POSTGRES_DSN}
+    logging: *logging
+    networks:
+      - caddy-ingress
+      - netbird-backend
+    ports:
+      - "3478:3478/udp"
+    restart: unless-stopped
+    volumes:
+      - netbird.data:/var/lib/netbird
+      - ./config/config.yaml:/etc/netbird/config.yaml:ro
+
+  netbird-dashboard:
+    image: netbirdio/dashboard:${NETBIRD_DASHBOARD_IMAGE_TAG}
+    container_name: netbird-dashboard
+    environment:
+      - NETBIRD_MGMT_API_ENDPOINT=${NETBIRD_MGMT_API_ENDPOINT}
+      - NETBIRD_MGMT_GRPC_API_ENDPOINT=${NETBIRD_MGMT_GRPC_API_ENDPOINT}
+      - AUTH_AUDIENCE=${AUTH_AUDIENCE}
+      - AUTH_CLIENT_ID=${AUTH_CLIENT_ID}
+      - AUTH_CLIENT_SECRET=${AUTH_CLIENT_SECRET}
+      - AUTH_AUTHORITY=${AUTH_AUTHORITY}
+      - USE_AUTH0=${USE_AUTH0}
+      - AUTH_SUPPORTED_SCOPES=${AUTH_SUPPORTED_SCOPES}
+      - AUTH_REDIRECT_URI=${AUTH_REDIRECT_URI}
+      - AUTH_SILENT_REDIRECT_URI=${AUTH_SILENT_REDIRECT_URI}
+      - NGINX_SSL_PORT=${NGINX_SSL_PORT}
+      - LETSENCRYPT_DOMAIN=${LETSENCRYPT_DOMAIN}
+    logging: *logging
+    networks:
+      - caddy-ingress
+      - netbird-backend
+    restart: unless-stopped
+
+  caddy:
+    build:
+      context: .
+      dockerfile: ./caddy/Dockerfile
+    container_name: caddy
+    environment:
+      - BASE_URL=${BASE_URL}
+    logging: *logging
+    networks:
+      netbird:
+        ipv4_address: 172.30.0.10
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy.data:/data
+
+networks:
+  # Public / External Network
+  caddy-ingress:
+    name: caddy-ingress
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  # Storage / Backend Network (Not Accessible Externally)
+  netbird-backend:
+    driver: bridge
+    name: netbird-backend
+
+volumes:
+  postgres.data:
+    name: postgres.data
+  netbird.data:
+    name: netbird.data
+  caddy.data:
+    name: caddy.data

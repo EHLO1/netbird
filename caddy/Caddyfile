@@ -1,0 +1,18 @@
+{
+    admin off
+}
+
+{$NETBIRD_DOMAIN} {
+    tls {
+        key_type p256
+    }
+
+    @grpc header Content-Type application/grpc*
+    @backend path /relay* /ws-proxy/* /api/* /oauth2/*
+
+    route {
+        reverse_proxy @grpc h2c://netbird-server:80
+        reverse_proxy @backend netbird-server:80
+        reverse_proxy dashboard:80
+    }
+}
