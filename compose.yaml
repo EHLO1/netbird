@@ -31,7 +31,22 @@ services:
     restart: unless-stopped
     volumes:
       - postgres.data:/var/lib/postgresql/data
-      - ./postgres-init/01-databases.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+      - ./config/postgres/db-init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+
+  caddy:
+    build:
+      context: ./config/caddy
+      dockerfile: ./Dockerfile
+    container_name: caddy
+    environment:
+      - BASE_URL=${BASE_URL}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    logging: *logging
+    networks_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
 
   netbird-server:
     image: netbirdio/netbird-server:${NETBIRD_SERVER_IMAGE_TAG}
@@ -46,14 +61,15 @@ services:
       - NB_STORE_ENGINE_POSTGRES_DSN=${NB_STORE_ENGINE_POSTGRES_DSN}
     logging: *logging
     networks:
-      - caddy-ingress
+      - netbird-frontend
       - netbird-backend
     ports:
+      - "127.0.0.1:8081:80"
       - "3478:3478/udp"
     restart: unless-stopped
     volumes:
-      - netbird.data:/var/lib/netbird
-      - ./config/config.yaml:/etc/netbird/config.yaml:ro
+      - ./config/netbird/config.yaml:/etc/netbird/config.yaml:ro
+      - ./data/netbird:/var/lib/netbird
 
   netbird-dashboard:
     image: netbirdio/dashboard:${NETBIRD_DASHBOARD_IMAGE_TAG}
@@ -73,46 +89,52 @@ services:
       - LETSENCRYPT_DOMAIN=${LETSENCRYPT_DOMAIN}
     logging: *logging
     networks:
-      - caddy-ingress
-      - netbird-backend
+      - netbird-frontend
+    ports:
+      - "127.0.0.1:8080:80"
     restart: unless-stopped
 
-  caddy:
-    build:
-      context: .
-      dockerfile: ./caddy/Dockerfile
-    container_name: caddy
-    environment:
-      - BASE_URL=${BASE_URL}
-    logging: *logging
-    networks:
-      netbird:
-        ipv4_address: 172.30.0.10
-    ports:
-      - 80:80
-      - 443:443
-    restart: unless-stopped
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy.data:/data
+    netbird-proxy:
+      image: netbirdio/reverse-proxy:${NETBIRD_PROXY_IMAGE_TAG}
+      container_name: netbird-proxy
+      depends_on:
+        - caddy
+        - netbird-server
+      environment:
+        - NB_PROXY_MANAGEMENT_ADDRESS=${NB_PROXY_MANAGEMENT_ADDRESS}
+        - NB_PROXY_ALLOW_INSECURE=${NB_PROXY_ALLOW_INSECURE}
+        - NB_PROXY_DOMAIN=${NB_PROXY_DOMAIN}
+        - NB_PROXY_TOKEN=${NB_PROXY_TOKEN}
+        - NB_PROXY_ADDRESS=${NB_PROXY_ADDRESS}
+        - NB_PROXY_PROXY_PROTOCOL=${NB_PROXY_PROXY_PROTOCOL}
+        - NB_PROXY_TRUSTED_PROXIES=${NB_PROXY_TRUSTED_PROXIES}
+        - NB_PROXY_ACME_CERTIFICATES=${NB_PROXY_ACME_CERTIFICATES}
+        - NB_PROXY_ACME_CHALLENGE_TYPE=$NB_PROXY_ACME_CHALLENGE_TYPE}
+        - NB_PROXY_CERTIFICATE_DIRECTORY=${NB_PROXY_CERTIFICATE_DIRECTORY}
+        - NB_PROXY_WILDCARD_CERT_DIR=${NB_PROXY_WILDCARD_CERT_DIR}
+        - NB_PROXY_PRIVATE=${NB_PROXY_PRIVATE}
+      logging: *logging
+      networks:
+        - netbird-frontend
+      ports:
+      - "127.0.0.1:8443:8443"
+      restart: unless-stopped
+      volumes:
+        - ./data/netbird-proxy/certs:/certs
+        - ${CADDY_WILDCARD_DIR}:/certs/wildcard:ro
 
 networks:
-  # Public / External Network
-  caddy-ingress:
-    name: caddy-ingress
+  netbird-frontend:
+    name: netbird-frontend
     driver: bridge
     ipam:
       config:
         - subnet: 172.30.0.0/24
-  # Storage / Backend Network (Not Accessible Externally)
   netbird-backend:
-    driver: bridge
     name: netbird-backend
+    driver: bridge
+    internal: true
 
 volumes:
   postgres.data:
     name: postgres.data
-  netbird.data:
-    name: netbird.data
-  caddy.data:
-    name: caddy.data
