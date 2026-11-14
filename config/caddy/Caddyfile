@@ -1,6 +1,10 @@
 {
 	admin off
 
+	events {
+        on cert_obtained exec /usr/local/bin/deploy-proxy-cert.sh {event.data.identifier} {event.data.certificate_path} {event.data.private_key_path}
+    }
+
 	servers :443 {
 		listener_wrappers {
 			layer4 {

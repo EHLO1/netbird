@@ -3,3 +3,4 @@
 
 # Except for this .gitignore file itself
 !.gitignore
+!wildcard/

@@ -48,6 +48,7 @@ services:
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/caddy:/data
+      - ./data/netbird-proxy/certs/wildcard:/certs/wildcard
 
   netbird-server:
     image: netbirdio/netbird-server:${NETBIRD_SERVER_IMAGE_TAG}
@@ -123,7 +124,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./data/netbird-proxy/certs:/certs
-      - ${CADDY_WILDCARD_DIR}:/certs/wildcard:ro
 
 networks:
   netbird-frontend:
