@@ -13,7 +13,7 @@
 				route {
 					proxy {
 						proxy_protocol v2
-						upstream 127.0.0.1:8443
+						upstream 127.0.0.1:8443  # netbird-proxy
 					}
 				}
 			}
@@ -24,22 +24,28 @@
 
 {$BASE_URL} {
     tls {
-		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-	}
+        issuer acme {
+            email {$SSL_EMAIL}
+            dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        }
+    }
 
     @grpc header Content-Type application/grpc*
-    reverse_proxy @grpc h2c://127.0.0.1:8081
+    reverse_proxy @grpc h2c://127.0.0.1:8081  # netbird-server
 
     @backend path /relay* /ws-proxy/* /api/* /oauth2/*
-    reverse_proxy @backend 127.0.0.1:8081
+    reverse_proxy @backend 127.0.0.1:8081  # netbird-server
     
-    reverse_proxy /* 127.0.0.1:8080
+    reverse_proxy /* 127.0.0.1:8080  # netbird-dashboard
 }
 
 # Dummy block - Allows Caddy to issue and renew the wildcard cert.
 *.{$NB_PROXY_DOMAIN} {
-	tls {
-		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-	}
+    tls {
+        issuer acme {
+            email {$SSL_EMAIL}
+            dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        }
+    }
 	abort
 }

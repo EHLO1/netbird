@@ -40,6 +40,8 @@ services:
     container_name: caddy
     environment:
       - BASE_URL=${BASE_URL}
+      - NB_PROXY_DOMAIN=${NB_PROXY_DOMAIN}
+      - SSL_EMAIL=${SSL_EMAIL}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     logging: *logging
     networks_mode: host
@@ -57,8 +59,10 @@ services:
         condition: service_healthy
     environment:
       - NB_AUTH_SECRET=${NB_AUTH_SECRET}
-      - NB_IDP_SESSION_COOKIE_ENCRYPTION_KEY=${NB_IDP_SESSION_COOKIE_ENCRYPTION_KEY}
       - NB_STORE_ENGINE_POSTGRES_DSN=${NB_STORE_ENGINE_POSTGRES_DSN}
+      - NB_STORE_ENCRYPTION_KEY=${NB_STORE_ENCRYPTION_KEY}
+      - NB_ACTIVITY_EVENT_STORE_ENGINE=${NB_ACTIVITY_EVENT_STORE_ENGINE}
+      - NB_ACTIVITY_EVENT_POSTGRES_DSN=${NB_ACTIVITY_EVENT_POSTGRES_DSN}
     logging: *logging
     networks:
       - netbird-frontend

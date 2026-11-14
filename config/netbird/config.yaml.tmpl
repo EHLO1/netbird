@@ -108,7 +108,7 @@ server:
     dsn: "{{.NB_STORE_ENGINE_POSTGRES_DSN}}"  # Connection string for postgres
     # Store field encryption key. Can also be set via NB_STORE_ENCRYPTION_KEY;
     # a non-empty value overrides this field.
-    # encryptionKey: ""
+    encryptionKey: "{{.NB_STORE_ENCRYPTION_KEY}}"
     # file: ""  # Custom SQLite file path (optional, defaults to {dataDir}/store.db)
 
   # Activity events store configuration (optional, defaults to sqlite in dataDir)
@@ -131,12 +131,12 @@ server:
   #   file: ""  # Custom SQLite file path (optional, defaults to {dataDir}/idp.db)
 
   # Reverse proxy settings (optional)
-  reverseProxy:
-    trustedHTTPProxies:
-      - "172.30.0.10/32"    # CIDRs of trusted reverse proxies (e.g. ["10.0.0.0/8"])
+  # reverseProxy:
+  #   trustedHTTPProxies:
+  #     - "172.30.0.10/32"    # CIDRs of trusted reverse proxies (e.g. ["10.0.0.0/8"])
     #   trustedHTTPProxiesCount: 0       # Number of trusted proxies in front of the server (alternative to trustedHTTPProxies)
-    trustedPeers:
-      - "172.30.0.10/32"    # CIDRs of trusted peer networks (e.g. ["100.64.0.0/10"])            
+    # trustedPeers:
+    #   - "172.30.0.10/32"    # CIDRs of trusted peer networks (e.g. ["100.64.0.0/10"])            
   #   accessLogRetentionDays: 7        # Days to retain HTTP access logs. 0 (or unset) defaults to 7. Negative values disable cleanup (logs kept indefinitely).
   #   accessLogCleanupIntervalHours: 24 # How often (in hours) to run the access-log cleanup job. 0 (or unset) is treated as "not set" and defaults to 24 hours; cleanup remains enabled. To disable cleanup, set accessLogRetentionDays to a negative value.
 
