@@ -40,7 +40,7 @@ server:
 
   # Shared secret for relay authentication (required when running local relay).
   # Can also be set via NB_AUTH_SECRET; a non-empty value overrides this field.
-  authSecret: "{{.NB_AUTH_SECRET}}"
+  # authSecret: ""
 
   # Data directory for all services
   dataDir: "/var/lib/netbird/"
@@ -105,16 +105,16 @@ server:
   # Store configuration
   store:
     engine: "postgres"  # sqlite or postgres
-    dsn: "{{.NB_STORE_ENGINE_POSTGRES_DSN}}"  # Connection string for postgres
+    dsn: "host=postgres port=5432 user={{.POSTGRES_USER}} password={{.POSTGRES_PASSWORD}} dbname=netbird sslmode=disable"  # Connection string for postgres
     # Store field encryption key. Can also be set via NB_STORE_ENCRYPTION_KEY;
     # a non-empty value overrides this field.
-    encryptionKey: "{{.NB_STORE_ENCRYPTION_KEY}}"
+    # encryptionKey: ""
     # file: ""  # Custom SQLite file path (optional, defaults to {dataDir}/store.db)
 
   # Activity events store configuration (optional, defaults to sqlite in dataDir)
   activityStore:
     engine: "postgres"  # sqlite or postgres
-    dsn: "{{.NB_ACTIVITY_EVENT_POSTGRES_DSN}}"  # Connection string for postgres
+    dsn: "host=postgres port=5432 user={{.POSTGRES_USER}} password={{.POSTGRES_PASSWORD}} dbname=netbird sslmode=disable"  # Connection string for postgres
   #   file: ""  # Custom SQLite file path (optional, defaults to {dataDir}/events.db)
 
   # Reverse proxy access log store configuration (optional, follows the store engine:
@@ -127,7 +127,7 @@ server:
   # Auth (embedded IdP) store configuration (optional, defaults to sqlite3 in dataDir/idp.db)
   authStore:
     engine: "postgres"  # sqlite3 or postgres
-    dsn: "{{.NB_SERVER_AUTHSTORE_DSN}}"  # Connection string for postgres (e.g., "host=localhost port=5432 user=postgres password=postgres dbname=netbird_idp sslmode=disable")
+    dsn: "host=postgres port=5432 user={{.POSTGRES_USER}} password={{.POSTGRES_PASSWORD}} dbname=netbird sslmode=disable"  # Connection string for postgres (e.g., "host=localhost port=5432 user=postgres password=postgres dbname=netbird_idp sslmode=disable")
   #   file: ""  # Custom SQLite file path (optional, defaults to {dataDir}/idp.db)
 
   # Reverse proxy settings (optional)
