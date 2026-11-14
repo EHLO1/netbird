@@ -8,16 +8,15 @@
 	servers :443 {
 		listener_wrappers {
 			layer4 {
-				# Hostnames terminated by Caddy @ L7 do nothing in L4 so they skip to standard Caddy TLS/HTTP
-				@caddy_hosts tls sni {$BASE_URL}
-				route @caddy_hosts {
+				# Route all hostnames except NetBird management to the proxy
+				@proxy_traffic not tls {
+					sni {$BASE_URL}
 				}
 
-				# Catch-all for *.{$NB_PROXY_DOMAIN} and any Custom Domains
-				route {
+				route @proxy_traffic {
 					proxy {
 						proxy_protocol v2
-						upstream 127.0.0.1:8443  # netbird-proxy
+						upstream 127.0.0.1:8443
 					}
 				}
 			}
