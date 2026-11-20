@@ -40,6 +40,11 @@
     reverse_proxy @backend 127.0.0.1:8081  # netbird-server
     
     reverse_proxy /* 127.0.0.1:8080  # netbird-dashboard
+
+	log {
+		output file /data/caddy/logs/management-access.json
+		format json
+	}
 }
 
 # Dummy block - Allows Caddy to issue and renew the wildcard cert.
